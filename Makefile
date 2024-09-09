@@ -1,6 +1,5 @@
 NAME = Philosophers
-LIBFT = inc/Libft/libft.a
-INCUDES = -I inc
+INCLUDES = -I inc
 SRCS =	src/main.c \
 	src/init.c \
 	src/cycle.c \
@@ -14,23 +13,17 @@ RM = rm -rf
 
 all : $(NAME)
 
-
-$(NAME) : $(OBJS) $(LIBFT)
-	$(CC) $(CFLAGS) $(OBJS) $(INCLUDES) -o $(NAME) $(LIBFT)
-
-$(LIBFT):
-	make -C inc/Libft
+$(NAME) : $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) $(INCLUDES) -o $(NAME)
 
 %.o: %.c
 	@$(CC) $(CFLAGS) -o $@ -c $< $(INCLUDES) && printf "Compiling: $(notdir $<)"
 
 clean :
 	$(RM) $(OBJS)
-	make clean -C inc/Libft
 
 fclean : clean
 	$(RM) $(NAME)
-	make fclean -C inc/Libft
 
 re : fclean all
 

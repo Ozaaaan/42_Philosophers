@@ -6,51 +6,68 @@
 /*   By: ozdemir <ozdemir@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/15 12:11:10 by ozdemir           #+#    #+#             */
-/*   Updated: 2024/05/15 16:09:04 by ozdemir          ###   ########.fr       */
+/*   Updated: 2024/06/03 12:01:39 by ozdemir          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../inc/philosophers.h"
 
-void    create_philos_threads(t_general *general)
+int	ft_usleep(size_t milliseconds, t_philo *philo)
 {
-        int     i;
+	size_t	start;
+	int		dead;
 
-        i = 0;
-        while (i < general->number_of_philosophers)
-        {
-                pthread_create(&general->philos[i].thread, NULL, philo_cycle, &general->philos[i]);
-                i++;
-        }
+	start = get_time_in_ms();
+	while ((get_time_in_ms() - start) < milliseconds)
+	{
+		pthread_mutex_lock(&(philo->general->died_mutex));
+		dead = philo->general->died;
+		pthread_mutex_unlock(&(philo->general->died_mutex));
+		if (dead == 1)
+			break ;
+		usleep(500);
+	}
+	return (0);
 }
 
-void    join_philos_threads(t_general *general)
+int	ft_strlen(char *str)
 {
-        int     i;
+	int	i;
 
-        i = 0;
-        while (i < general->number_of_philosophers)
-        {
-                pthread_join(general->philos[i].thread, NULL);
-                i++;
-        }
+	i = 0;
+	while (str[i])
+		i++;
+	return (i);
 }
 
-int     main(int ac, char **av)
+void	exit_error(char *msg)
 {
-        t_general general;
+	write(2, "Error\n", 6);
+	write(STDERR_FILENO, msg, ft_strlen(msg));
+	write(STDERR_FILENO, "\n", 1);
+	exit(EXIT_FAILURE);
+}
 
-        if (ac < 5 || ac > 6)
-                exit_error("Invalid number of args");
-        if (init_general(&general, ac, av))
-                exit_error("Init error");
-        start_death_checker(&general);
-        create_philos_threads(&general);
-        join_philos_threads(&general);
-        join_death_checker(&general);
+int	main(int ac, char **av)
+{
+	t_general	general;
 
-        destroy_mutexes(&general);
-        free(general.forks);
-        free(general.philos);
-        return (0);
+	if (ac < 5 || ac > 6)
+		exit_error("Invalid number of args");
+	if (args_check(av))
+		exit_error("Invalid arg");
+	if (init_general(&general, ac, av))
+		exit_error("Init error");
+	if (init_mutex(&general))
+		exit_error("Mutex init error");
+	if (init_philos(&general))
+		exit_error("Philo init error");
+	if (create_thread(&general))
+	{
+		free_all(&general);
+		exit_error("Thread error");
+	}
+	free_all(&general);
+	pthread_exit(NULL);
+	return (0);
 }

@@ -6,7 +6,7 @@
 /*   By: ozdemir <ozdemir@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/18 11:45:22 by ozdemir           #+#    #+#             */
-/*   Updated: 2024/05/15 16:09:11 by ozdemir          ###   ########.fr       */
+/*   Updated: 2024/06/07 13:54:33 by ozdemir          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,42 +14,86 @@
 
 long long	get_time_in_ms(void)
 {
-	struct timeval time;
+	struct timeval	time;
+
 	gettimeofday(&time, NULL);
-	return(time.tv_sec * 1000) + (time.tv_usec / 1000);
+	return ((time.tv_sec * 1000) + (time.tv_usec / 1000));
 }
 
 void	message_print(t_philo *philo, char *str)
 {
 	long	time;
 
+	time = get_time_in_ms() - philo->general->start_time;
 	pthread_mutex_lock(&philo->general->died_mutex);
 	if (!philo->general->died)
-	{
-		time = get_time_in_ms() - philo->general->start_time;
 		printf("%1ld %d %s\n", time, philo->id, str);
-	}
 	pthread_mutex_unlock(&philo->general->died_mutex);
 }
 
-void	exit_error(char *msg)
+long long	ft_atoi(const char *str)
 {
-	write(2, "Error\n", 6);
-	write(STDERR_FILENO, msg, ft_strlen(msg));
-	write(STDERR_FILENO, "\n", 1);
-	exit(EXIT_FAILURE);
+	int			i;
+	int			signe;
+	long long	res;
+
+	i = 0;
+	signe = 1;
+	res = 0;
+	while ((str[i] >= 9 && str[i] <= 13) || str[i] == ' ')
+		i++;
+	if (str[i] == '-' || str[i] == '+')
+	{
+		if (str[i] == '-')
+			signe = -signe;
+		i++;
+	}
+	while (str[i] >= '0' && str[i] <= '9')
+	{
+		res = (res * 10) + (str[i] - '0');
+		i++;
+	}
+	return (signe * res);
 }
 
 void	take_forks(t_philo *philo)
 {
-	pthread_mutex_lock(&philo->left_fork->lock);
-	message_print(philo, "has taken a fork");
-	pthread_mutex_lock(&philo->right_fork->lock);
-	message_print(philo, "has taken a fork");
+	if (philo->left_fork->number < philo->right_fork->number)
+	{
+		pthread_mutex_lock(&philo->left_fork->lock);
+		message_print(philo, "has taken a fork");
+		if (philo->general->number_of_philosophers == 1)
+		{
+			usleep(philo->general->time_to_die * 2000);
+			return ;
+		}
+		pthread_mutex_lock(&philo->right_fork->lock);
+		message_print(philo, "has taken a fork");
+	}
+	else
+	{
+		pthread_mutex_lock(&philo->right_fork->lock);
+		message_print(philo, "has taken a fork");
+		if (philo->general->number_of_philosophers == 1)
+		{
+			usleep(philo->general->time_to_die * 2000);
+			return ;
+		}
+		pthread_mutex_lock(&philo->left_fork->lock);
+		message_print(philo, "has taken a fork");
+	}
 }
 
 void	drop_forks(t_philo *philo)
 {
-	pthread_mutex_unlock(&philo->left_fork->lock);
-	pthread_mutex_unlock(&philo->right_fork->lock);
+	if (philo->left_fork->number < philo->right_fork->number)
+	{
+		pthread_mutex_unlock(&philo->left_fork->lock);
+		pthread_mutex_unlock(&philo->right_fork->lock);
+	}
+	else
+	{
+		pthread_mutex_unlock(&philo->right_fork->lock);
+		pthread_mutex_unlock(&philo->left_fork->lock);
+	}
 }
